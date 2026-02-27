@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Melody</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: #e0e0e0;
+    }
+
+    .container {
+      text-align: center;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      letter-spacing: 0.1em;
+      background: linear-gradient(90deg, #a78bfa, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: #94a3b8;
+      margin-bottom: 3rem;
+      letter-spacing: 0.05em;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .play-btn {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      background: linear-gradient(135deg, #7c3aed, #2563eb);
+      box-shadow: 0 0 30px rgba(124, 58, 237, 0.5);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .play-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 45px rgba(124, 58, 237, 0.7);
+    }
+
+    .play-btn:active {
+      transform: scale(0.96);
+    }
+
+    .play-btn svg {
+      width: 32px;
+      height: 32px;
+      fill: #ffffff;
+    }
+
+    .song-title {
+      font-size: 1.1rem;
+      color: #cbd5e1;
+      letter-spacing: 0.05em;
+    }
+
+    .progress-bar-wrapper {
+      width: 280px;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #7c3aed, #2563eb);
+      border-radius: 3px;
+      transition: width 0.1s linear;
+    }
+
+    .note-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      flex-wrap: wrap;
+      max-width: 320px;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      transition: background 0.1s ease, transform 0.1s ease;
+    }
+
+    .dot.active {
+      background: #a78bfa;
+      transform: scale(1.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>♪ Melody</h1>
+    <p class="subtitle">Twinkle Twinkle Little Star</p>
+    <div class="controls">
+      <button class="play-btn" id="playBtn" aria-label="Play melody">
+        <svg id="playIcon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+        <svg id="pauseIcon" viewBox="0 0 24 24" style="display:none"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></svg>
+      </button>
+      <span class="song-title" id="songTitle">Press play</span>
+      <div class="progress-bar-wrapper">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="note-dots" id="noteDots"></div>
+    </div>
+  </div>
+
+  <script>
+    // Notes: frequency in Hz, duration in seconds
+    const C4 = 261.63, D4 = 293.66, E4 = 329.63, F4 = 349.23,
+          G4 = 392.00, A4 = 440.00, B4 = 493.88, C5 = 523.25;
+
+    const melody = [
+      // Twinkle Twinkle Little Star
+      { f: C4, d: 0.4 }, { f: C4, d: 0.4 }, { f: G4, d: 0.4 }, { f: G4, d: 0.4 },
+      { f: A4, d: 0.4 }, { f: A4, d: 0.4 }, { f: G4, d: 0.8 },
+      { f: F4, d: 0.4 }, { f: F4, d: 0.4 }, { f: E4, d: 0.4 }, { f: E4, d: 0.4 },
+      { f: D4, d: 0.4 }, { f: D4, d: 0.4 }, { f: C4, d: 0.8 },
+      { f: G4, d: 0.4 }, { f: G4, d: 0.4 }, { f: F4, d: 0.4 }, { f: F4, d: 0.4 },
+      { f: E4, d: 0.4 }, { f: E4, d: 0.4 }, { f: D4, d: 0.8 },
+      { f: G4, d: 0.4 }, { f: G4, d: 0.4 }, { f: F4, d: 0.4 }, { f: F4, d: 0.4 },
+      { f: E4, d: 0.4 }, { f: E4, d: 0.4 }, { f: D4, d: 0.8 },
+      { f: C4, d: 0.4 }, { f: C4, d: 0.4 }, { f: G4, d: 0.4 }, { f: G4, d: 0.4 },
+      { f: A4, d: 0.4 }, { f: A4, d: 0.4 }, { f: G4, d: 0.8 },
+      { f: F4, d: 0.4 }, { f: F4, d: 0.4 }, { f: E4, d: 0.4 }, { f: E4, d: 0.4 },
+      { f: D4, d: 0.4 }, { f: D4, d: 0.4 }, { f: C4, d: 0.8 },
+    ];
+
+    const totalDuration = melody.reduce((s, n) => s + n.d, 0);
+
+    // Build note dots
+    const noteDots = document.getElementById('noteDots');
+    melody.forEach((_, i) => {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      dot.id = 'dot-' + i;
+      noteDots.appendChild(dot);
+    });
+
+    const playBtn = document.getElementById('playBtn');
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const progressBar = document.getElementById('progressBar');
+    const songTitle = document.getElementById('songTitle');
+
+    // Envelope constants
+    const ENV_ATTACK_TIME   = 0.02;  // seconds to reach peak gain
+    const ENV_SUSTAIN_RATIO = 0.6;   // fraction of note duration at sustain level
+    const ENV_RELEASE_RATIO = 0.95;  // fraction of note duration when release starts
+    const ENV_PEAK_GAIN     = 0.35;
+    const ENV_SUSTAIN_GAIN  = 0.25;
+    const ENV_SILENCE       = 0.001;
+
+    let audioCtx = null;
+    let playing = false;
+    let startTime = 0;
+    let noteIndex = 0;
+    let scheduledNodes = [];
+    let animFrame = null;
+    let elapsed = 0;
+    let pauseOffset = 0;
+
+    function getOrCreateContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function scheduleNotes(ctx, startAt) {
+      scheduledNodes = [];
+      let t = startAt;
+      let offset = 0;
+
+      for (let i = 0; i < melody.length; i++) {
+        // Skip notes already played before pause offset
+        if (offset + melody[i].d <= pauseOffset) {
+          offset += melody[i].d;
+          continue;
+        }
+        const noteStart = t + Math.max(0, offset - pauseOffset);
+        const dur = melody[i].d;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(melody[i].f, noteStart);
+        gain.gain.setValueAtTime(ENV_SILENCE, noteStart);
+        gain.gain.linearRampToValueAtTime(ENV_PEAK_GAIN, noteStart + ENV_ATTACK_TIME);
+        gain.gain.linearRampToValueAtTime(ENV_SUSTAIN_GAIN, noteStart + dur * ENV_SUSTAIN_RATIO);
+        gain.gain.linearRampToValueAtTime(ENV_SILENCE, noteStart + dur * ENV_RELEASE_RATIO);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(noteStart);
+        osc.stop(noteStart + dur);
+        scheduledNodes.push(osc);
+        offset += dur;
+      }
+    }
+
+    function stopAll() {
+      scheduledNodes.forEach(n => {
+        try { n.stop(); } catch (_) {}
+      });
+      scheduledNodes = [];
+    }
+
+    function setDotActive(index) {
+      document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+      const dot = document.getElementById('dot-' + index);
+      if (dot) dot.classList.add('active');
+    }
+
+    function clearDots() {
+      document.querySelectorAll('.dot').forEach(d => d.classList.remove('active'));
+    }
+
+    function resetPlayback() {
+      pauseOffset = 0;
+      elapsed = 0;
+      noteIndex = 0;
+      progressBar.style.width = '0%';
+      clearDots();
+    }
+
+    function animate() {
+      if (!playing) return;
+      const ctx = audioCtx;
+      const now = ctx.currentTime;
+      elapsed = pauseOffset + (now - startTime);
+
+      if (elapsed >= totalDuration) {
+        // Finished
+        resetPlayback();
+        playing = false;
+        playIcon.style.display = '';
+        pauseIcon.style.display = 'none';
+        songTitle.textContent = 'Press play';
+        return;
+      }
+
+      progressBar.style.width = (elapsed / totalDuration * 100) + '%';
+
+      // Find current note
+      let acc = 0;
+      for (let i = 0; i < melody.length; i++) {
+        acc += melody[i].d;
+        if (elapsed < acc) {
+          if (noteIndex !== i) {
+            noteIndex = i;
+            setDotActive(i);
+          }
+          break;
+        }
+      }
+
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    function play() {
+      const ctx = getOrCreateContext();
+      startTime = ctx.currentTime;
+      scheduleNotes(ctx, startTime);
+      playing = true;
+      playIcon.style.display = 'none';
+      pauseIcon.style.display = '';
+      songTitle.textContent = 'Playing…';
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    function pause() {
+      stopAll();
+      cancelAnimationFrame(animFrame);
+      pauseOffset = elapsed;
+      playing = false;
+      playIcon.style.display = '';
+      pauseIcon.style.display = 'none';
+      songTitle.textContent = 'Paused';
+    }
+
+    playBtn.addEventListener('click', () => {
+      if (playing) {
+        pause();
+      } else {
+        if (pauseOffset >= totalDuration) {
+          resetPlayback();
+        }
+        play();
+      }
+    });
+  </script>
+</body>
+</html>
